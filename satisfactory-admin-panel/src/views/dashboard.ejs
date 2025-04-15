@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Satisfactory Admin Panel</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <style>
+    .sidebar {
+      min-height: calc(100vh - 56px);
+      background-color: #f8f9fa;
+      border-right: 1px solid #dee2e6;
+      padding: 20px 0;
+    }
+    .sidebar .nav-link {
+      color: #333;
+      border-radius: 0;
+    }
+    .sidebar .nav-link.active {
+      background-color: #ff9423;
+      color: #fff;
+    }
+    .sidebar .nav-link:hover {
+      background-color: #ff9423;
+      color: #fff;
+      opacity: 0.8;
+    }
+    .server-status {
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      background-color: #fff;
+    }
+    .server-actions {
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      background-color: #fff;
+    }
+    .logs-container {
+      height: 400px;
+      background-color: #212529;
+      color: #fff;
+      border-radius: 5px;
+      padding: 10px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 5px;
+    }
+    .status-running {
+      background-color: #28a745;
+    }
+    .status-stopped {
+      background-color: #dc3545;
+    }
+    .status-starting {
+      background-color: #ffc107;
+    }
+    .status-unhealthy {
+      background-color: #fd7e14;
+    }
+    .btn-satisfactory {
+      background-color: #ff9423;
+      border-color: #ff9423;
+      color: #fff;
+    }
+    .btn-satisfactory:hover {
+      background-color: #e27600;
+      border-color: #e27600;
+      color: #fff;
+    }
+    .navbar-brand {
+      font-weight: bold;
+      color: #ff9423 !important;
+    }
+    .nav-tabs .nav-link.active {
+      border-bottom: 2px solid #ff9423;
+      color: #ff9423;
+    }
+
+    /* Add new styles for loading indicators */
+    .loading-indicator {
+      display: none;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid rgba(0, 0, 0, 0.1);
+      border-left-color: #ff9423;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-left: 0.5rem;
+    }
+    
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">Satisfactory Admin Panel</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <span class="nav-link">Welcome, <%= user.username %></span>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/logout"><i class="bi bi-box-arrow-right"></i> Logout</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container-fluid">
+    <div class="row">
+      <nav class="col-md-2 sidebar">
+        <div class="position-sticky">
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a class="nav-link active" href="#overview" data-bs-toggle="tab">
+                <i class="bi bi-speedometer2"></i> Overview
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#server-logs" data-bs-toggle="tab">
+                <i class="bi bi-journal-text"></i> Server Logs
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#save-files" data-bs-toggle="tab">
+                <i class="bi bi-save"></i> Save Files
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#backup" data-bs-toggle="tab">
+                <i class="bi bi-archive"></i> Backup
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#settings" data-bs-toggle="tab">
+                <i class="bi bi-gear"></i> Settings
+              </a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+
+      <main class="col-md-10 ms-sm-auto px-md-4 py-4">
+        <div class="tab-content">
+          <!-- Overview Tab -->
+          <div class="tab-pane fade show active" id="overview">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+              <h1 class="h2">Server Overview</h1>
+              <div class="btn-toolbar mb-2 mb-md-0">
+                <div class="btn-group me-2">
+                  <button type="button" class="btn btn-sm btn-outline-secondary" id="refresh-overview">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                    <span class="loading-indicator" id="overview-loader"></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="server-status">
+                  <h4>Server Status</h4>
+                  <div class="d-flex align-items-center">
+                    <div class="status-indicator <%= serverStatus.running ? 
+                      (serverStatus.status === 'running' ? 'status-running' : 
+                       serverStatus.status === 'unhealthy' ? 'status-unhealthy' : 'status-starting') 
+                      : 'status-stopped' %>"></div>
+                    <span class="fw-bold"><%= serverStatus.running ? 
+                      (serverStatus.status === 'running' ? 'Running' : 
+                       serverStatus.status === 'unhealthy' ? 'Unhealthy' : 'Starting') 
+                      : 'Stopped' %></span>
+                  </div>
+                  <p class="mt-2 mb-0">
+                    <strong>Uptime:</strong> <%= serverStatus.uptime %>
+                  </p>
+                </div>
+
+                <div class="server-actions">
+                  <h4>Server Control</h4>
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-satisfactory" id="start-server" <%= serverStatus.running ? 'disabled' : '' %>>
+                      <i class="bi bi-play-fill"></i> Start
+                    </button>
+                    <button class="btn btn-danger" id="stop-server" <%= !serverStatus.running ? 'disabled' : '' %>>
+                      <i class="bi bi-stop-fill"></i> Stop
+                    </button>
+                    <button class="btn btn-warning" id="restart-server" <%= !serverStatus.running ? 'disabled' : '' %>>
+                      <i class="bi bi-arrow-repeat"></i> Restart
+                    </button>
+                    <button class="btn btn-secondary" id="save-server" <%= !serverStatus.running ? 'disabled' : '' %>>
+                      <i class="bi bi-save"></i> Save
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="server-status">
+                  <h4>Players Online</h4>
+                  <% if (players && players.length > 0) { %>
+                    <ul class="list-group">
+                      <% players.forEach(player => { %>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                          <%= player.name %>
+                          <span class="badge bg-primary rounded-pill"><%= player.playTime %></span>
+                        </li>
+                      <% }) %>
+                    </ul>
+                  <% } else { %>
+                    <p>No players online</p>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mt-4">
+              <div class="col-12">
+                <h4>Recent Server Logs</h4>
+                <div class="logs-container">
+                  <% if (logs && logs.length > 0) { %>
+                    <% logs.slice(-20).forEach(log => { %>
+                      <div><%= log %></div>
+                    <% }) %>
+                  <% } else { %>
+                    <div>No logs available</div>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Server Logs Tab -->
+          <div class="tab-pane fade" id="server-logs">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+              <h1 class="h2">Server Logs</h1>
+              <div class="btn-toolbar mb-2 mb-md-0">
+                <div class="dropdown me-2">
+                  <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="logsDownloadDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-download"></i> Download Logs
+                  </button>
+                  <ul class="dropdown-menu" aria-labelledby="logsDownloadDropdown">
+                    <li><a class="dropdown-item" href="/api/server/download-logs?limit=100" target="_blank">Last 100 Lines</a></li>
+                    <li><a class="dropdown-item" href="/api/server/download-logs?limit=500" target="_blank">Last 500 Lines</a></li>
+                    <li><a class="dropdown-item" href="/api/server/download-logs?limit=1000" target="_blank">Last 1000 Lines</a></li>
+                    <li><a class="dropdown-item" href="/api/server/download-logs?limit=0" target="_blank">Download Full Log</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                      <div class="px-3 py-1">
+                        <div class="input-group input-group-sm">
+                          <input type="number" class="form-control" id="customLogLines" placeholder="Custom lines" value="100" min="1" max="10000">
+                          <button class="btn btn-outline-secondary" type="button" id="downloadCustomLogs">Download</button>
+                        </div>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+                <div class="btn-group me-2">
+                  <button type="button" class="btn btn-sm btn-outline-secondary" id="refresh-logs">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                    <span class="loading-indicator" id="logs-loader"></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="logs-container" style="height: 700px;">
+              <% if (logs && logs.length > 0) { %>
+                <% logs.forEach(log => { %>
+                  <div><%= log %></div>
+                <% }) %>
+              <% } else { %>
+                <div>No logs available</div>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Save Files Tab -->
+          <div class="tab-pane fade" id="save-files">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+              <h1 class="h2">Save Files</h1>
+              <div class="btn-toolbar mb-2 mb-md-0">
+                <div class="btn-group me-2">
+                  <button type="button" class="btn btn-sm btn-outline-secondary" id="refresh-saves">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                    <span class="loading-indicator" id="saves-loader"></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="table-responsive">
+              <table class="table table-striped table-hover">
+                <thead>
+                  <tr>
+                    <th>Filename</th>
+                    <th>Size</th>
+                    <th>Last Modified</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (saves && saves.length > 0) { %>
+                    <% saves.forEach(save => { %>
+                      <tr>
+                        <td><%= save.name %></td>
+                        <td><%= Math.round(save.size / 1024) %> KB</td>
+                        <td><%= save.modified.toLocaleString() %></td>
+                        <td>
+                          <button class="btn btn-sm btn-outline-secondary download-save" data-path="<%= save.path %>">
+                            <i class="bi bi-download"></i> Download
+                          </button>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  <% } else { %>
+                    <tr>
+                      <td colspan="4" class="text-center">No save files found</td>
+                    </tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Backup Tab -->
+          <div class="tab-pane fade" id="backup">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+              <h1 class="h2">Backup Management</h1>
+            </div>
+            
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Create Backup</h5>
+                <p class="card-text">Create a backup of your Satisfactory server saves and configuration.</p>
+                <button id="create-backup" class="btn btn-satisfactory">
+                  <i class="bi bi-archive"></i> Create Backup Now
+                </button>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <h4>Backup History</h4>
+              <p>This feature will list existing backups in a future update.</p>
+            </div>
+          </div>
+
+          <!-- Settings Tab -->
+          <div class="tab-pane fade" id="settings">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+              <h1 class="h2">Server Settings</h1>
+            </div>
+            
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Server Configuration</h5>
+                <p class="card-text">This feature will allow editing server configuration in a future update.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/dashboard.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Server control buttons
+      document.getElementById('start-server').addEventListener('click', function() {
+        serverAction('start');
+      });
+      
+      document.getElementById('stop-server').addEventListener('click', function() {
+        if (confirm('Are you sure you want to stop the server?')) {
+          serverAction('stop');
+        }
+      });
+      
+      document.getElementById('restart-server').addEventListener('click', function() {
+        if (confirm('Are you sure you want to restart the server?')) {
+          serverAction('restart');
+        }
+      });
+      
+      document.getElementById('save-server').addEventListener('click', function() {
+        serverSave();
+      });
+      
+      document.getElementById('create-backup').addEventListener('click', function() {
+        serverBackup();
+      });
+      
+      // Refresh buttons
+      document.getElementById('refresh-overview').addEventListener('click', function() {
+        window.location.reload();
+      });
+      
+      document.getElementById('refresh-logs').addEventListener('click', function() {
+        window.location.reload();
+      });
+      
+      document.getElementById('refresh-saves').addEventListener('click', function() {
+        window.location.reload();
+      });
+      
+      // Scroll logs to bottom
+      const logsContainers = document.querySelectorAll('.logs-container');
+      logsContainers.forEach(container => {
+        container.scrollTop = container.scrollHeight;
+      });
+    });
+    
+    function serverAction(action) {
+      fetch('/server/action', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        alert(data.message);
+        if (data.success) {
+          window.location.reload();
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while performing the action');
+      });
+    }
+    
+    function serverSave() {
+      fetch('/server/save', {
+        method: 'POST',
+      })
+      .then(response => response.json())
+      .then(data => {
+        alert(data.message);
+        if (data.success) {
+          window.location.reload();
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while saving the server');
+      });
+    }
+    
+    function serverBackup() {
+      fetch('/server/backup', {
+        method: 'POST',
+      })
+      .then(response => response.json())
+      .then(data => {
+        alert(data.message);
+        if (data.success) {
+          window.location.reload();
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while creating a backup');
+      });
+    }
+  </script>
+</body>
+</html>

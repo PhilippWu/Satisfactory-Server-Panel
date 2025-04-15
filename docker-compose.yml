@@ -1,0 +1,49 @@
+version: "3"
+
+services:
+  satisfactory-server:
+    container_name: satisfactory-server
+    hostname: satisfactory-server
+    image: wolveix/satisfactory-server:latest
+    ports:
+      - "7777:7777/udp"
+      - "15000:15000/udp"
+      - "15777:15777/udp"
+    volumes:
+      - ./satisfactory-data:/config
+    environment:
+      - MAXPLAYERS=4
+      - PGID=1000
+      - PUID=1000
+      - ROOTLESS=false
+      - STEAMBETA=false
+      - TZ=Europe/Berlin
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+        reservations:
+          memory: 4G
+
+  admin-panel:
+    container_name: satisfactory-admin-panel
+    build:
+      context: ./satisfactory-admin-panel
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./satisfactory-data:/app/data:ro
+      # Don't mount the entire /app directory, which would override node_modules
+      - ./satisfactory-admin-panel/src:/app/src
+      - ./satisfactory-admin-panel/public:/app/public
+      - ./satisfactory-admin-panel/.env:/app/.env
+      - /var/run/docker.sock:/var/run/docker.sock  # Add Docker socket mount
+    environment:
+      - PORT=3000
+      - SESSION_SECRET=satisfactory-secret-change-this-in-production
+      - DEFAULT_ADMIN_PASSWORD=satisfactory
+    restart: unless-stopped
+    depends_on:
+      - satisfactory-server
+
