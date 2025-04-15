@@ -66,13 +66,19 @@ Edit the `docker-compose.yml` file to modify:
 
 ### Admin Panel Security
 
-**Important**: The default admin password is set in the docker-compose.yml file:
+**Important**: The default admin configuration is defined in the `.env` file (copy from `.env.example`):
 ```
+PORT=3000
 SESSION_SECRET=satisfactory-secret-change-this-in-production
 DEFAULT_ADMIN_PASSWORD=satisfactory
 ```
 
 **For production use, you should change these values.**
+
+To set up your environment:
+1. Copy the `.env.example` file to `.env` in the satisfactory-admin-panel directory
+2. Modify the values to secure your installation
+3. Restart the admin panel container to apply changes
 
 ## Project Structure
 
