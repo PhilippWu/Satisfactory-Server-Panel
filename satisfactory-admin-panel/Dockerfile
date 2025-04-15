@@ -15,7 +15,8 @@ RUN mkdir -p src/views public
 # Copy application files
 COPY src ./src
 COPY public ./public
-COPY .env ./.env
+# Create an empty .env file if it doesn't exist
+RUN touch .env
 
 EXPOSE 3000
 
