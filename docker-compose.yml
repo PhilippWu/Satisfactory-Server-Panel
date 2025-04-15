@@ -37,12 +37,10 @@ services:
       # Don't mount the entire /app directory, which would override node_modules
       - ./satisfactory-admin-panel/src:/app/src
       - ./satisfactory-admin-panel/public:/app/public
-      - ./satisfactory-admin-panel/.env:/app/.env
+      - ./.env:/app/.env
       - /var/run/docker.sock:/var/run/docker.sock  # Add Docker socket mount
-    environment:
-      - PORT=3000
-      - SESSION_SECRET=satisfactory-secret-change-this-in-production
-      - DEFAULT_ADMIN_PASSWORD=satisfactory
+    env_file:
+      - ./.env
     restart: unless-stopped
     depends_on:
       - satisfactory-server

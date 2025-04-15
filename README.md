@@ -75,14 +75,16 @@ DEFAULT_ADMIN_PASSWORD=satisfactory
 **For production use, you should change these values.**
 
 To set up your environment:
-1. Copy the `.env.example` file to `.env` in the satisfactory-admin-panel directory
+1. Copy the `.env.example` file to `.env` in the root directory
 2. Modify the values to secure your installation
 3. Restart the admin panel container to apply changes
 
 ## Project Structure
 
 ```
-├── docker-compose.yml       # Docker Compose configuration
+├── .env                    # Environment configuration (copied from .env.example)
+├── .env.example            # Example environment configuration template
+├── docker-compose.yml      # Docker Compose configuration
 ├── satisfactory-admin-panel/
 │   ├── Dockerfile          # Admin panel Docker configuration
 │   ├── package.json        # Node.js dependencies
