@@ -38,7 +38,6 @@ This project provides a complete Docker Compose setup for hosting a Satisfactory
 
 - **Satisfactory Server**: Connect via the game using port 7777 (UDP)
 - **Admin Panel**: http://YOUR_SERVER_IP:3000
-- **Direct File Access**: http://YOUR_SERVER_IP:8085 (if configured)
 
 ## File Management
 
